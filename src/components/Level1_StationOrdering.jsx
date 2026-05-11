@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import useAppStore from '../store/appStore';
 
 const Level1StationOrdering = ({ onComplete }) => {
   // Station data: ID and its signal value (calculated from ASCII values)
@@ -108,7 +109,20 @@ const Level1StationOrdering = ({ onComplete }) => {
       // Complete the level and pass sorted stations
       setTimeout(() => {
         const stationNames = sorted.map(station => station.station);
-        onComplete(stationNames);
+        const signalValues = {};
+        sorted.forEach(station => {
+          signalValues[station.station] = station.signal;
+        });
+        
+        // Save to global store and call onComplete
+        if (onComplete) {
+          onComplete({
+            sortedStations: stationNames,
+            signalValues,
+            inversionCount: inversions,
+            disorderLevel
+          });
+        }
       }, 1000);
     }
   }, [decodingComplete, decodedData, onComplete, corruptedStations.length]);

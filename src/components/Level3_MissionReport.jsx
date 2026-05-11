@@ -1,14 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import ParticleBackground from './ParticleBackground';
+import useAppStore from '../store/appStore';
 
-const Level3MissionReport = ({ activationSequence = [], onComplete }) => {
+const Level3MissionReport = ({ onComplete }) => {
   const [reportData, setReportData] = useState(null);
   const [hasCycles, setHasCycles] = useState(false);
 
-  // Sorted stations from Level 1
-  const sortedStations = ['AK', 'QA', 'FM', 'BT', 'DP', 'RC', 'LM', 'KN', 'PE', 'CU', 'HX', 'ZF', 'SJ', 'VG'];
+  // Read from global store
+  const activationSequence = useAppStore((state) => state.activationSequence);
+  const cycleDetected = useAppStore((state) => state.cycleDetected);
+  const dependencyMatrix = useAppStore((state) => state.dependencyMatrix);
+  
   // Use activation sequence from Level 2 if available
-  const activationOrder = activationSequence.length > 0 ? activationSequence : sortedStations;
+  const activationOrder = activationSequence.length > 0 ? activationSequence : ['AK', 'QA', 'FM', 'BT', 'DP', 'RC', 'LM', 'KN', 'PE', 'CU', 'HX', 'ZF', 'SJ', 'VG'];
 
   // Mock data for the report
   useEffect(() => {
@@ -23,8 +27,8 @@ const Level3MissionReport = ({ activationSequence = [], onComplete }) => {
       maxInversions: 91,
       disorderPercentage: 15,
       disorderLevel: 'LOW',
-      totalDependencies: 24,
-      cyclesDetected: 0,
+      totalDependencies: dependencyMatrix.length > 0 ? dependencyMatrix.flat().reduce((a, b) => a + b, 0) : 24,
+      cyclesDetected: cycleDetected ? 1 : 0,
       adjList: {}
     };
 
@@ -34,8 +38,8 @@ const Level3MissionReport = ({ activationSequence = [], onComplete }) => {
     });
 
     setReportData(data);
-    setHasCycles(data.cyclesDetected > 0);
-  }, [activationOrder]);
+    setHasCycles(cycleDetected);
+  }, [activationOrder, cycleDetected, dependencyMatrix]);
 
   const exportAsJSON = () => {
     if (!reportData) return;

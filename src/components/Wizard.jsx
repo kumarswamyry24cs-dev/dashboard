@@ -5,38 +5,46 @@ import Level2StationDependencyMatrix from './Level2_DependencyMatrix';
 import Level3MissionReport from './Level3_MissionReport';
 import NextButton from './NextButton';
 import useSoundEffects from '../hooks/useSoundEffects';
+import useAppStore from '../store/appStore';
 
 const Wizard = () => {
-  const [currentLevel, setCurrentLevel] = useState(1);
-  const [levelComplete, setLevelComplete] = useState({
-    1: false,
-    2: false,
-    3: false
-  });
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showScanline, setShowScanline] = useState(false);
   const [showGreenFlash, setShowGreenFlash] = useState(false);
   const [showWipeAnimation, setShowWipeAnimation] = useState(false);
-  const [sortedStations, setSortedStations] = useState([]);
-  const [activationSequence, setActivationSequence] = useState([]);
+  
+  // Global state from Zustand
+  const currentLevel = useAppStore((state) => state.currentLevel);
+  const setCurrentLevel = useAppStore((state) => state.setCurrentLevel);
+  const level1Complete = useAppStore((state) => state.level1Complete);
+  const level2Complete = useAppStore((state) => state.level2Complete);
+  const level3Complete = useAppStore((state) => state.level3Complete);
+  const setLevel1Data = useAppStore((state) => state.setLevel1Data);
+  const setLevel2Data = useAppStore((state) => state.setLevel2Data);
+  const setLevel3Data = useAppStore((state) => state.setLevel3Data);
+  
   const { soundEnabled, playBeep, playSuccess, toggleSound } = useSoundEffects();
 
   const totalLevels = 3;
+  
+  // Map global completion flags to local state for compatibility
+  const levelComplete = {
+    1: level1Complete,
+    2: level2Complete,
+    3: level3Complete,
+  };
 
   const handleLevelComplete = (level, data = null) => {
     playSuccess();
-    // Store sorted stations from Level 1
+    
+    // Store data to global state
     if (level === 1 && data) {
-      setSortedStations(data);
+      setLevel1Data(data);
+    } else if (level === 2 && data) {
+      setLevel2Data(data);
+    } else if (level === 3 && data) {
+      setLevel3Data(data);
     }
-    // Store activation sequence from Level 2
-    if (level === 2 && data) {
-      setActivationSequence(data);
-    }
-    setLevelComplete(prev => ({
-      ...prev,
-      [level]: true
-    }));
   };
 
   const handleNext = () => {
@@ -129,21 +137,19 @@ const Wizard = () => {
           }`}
         >
           {currentLevel === 1 && (
-            <Level1StationOrdering onComplete={(sortedStations) => handleLevelComplete(1, sortedStations)} />
+            <Level1StationOrdering onComplete={(data) => handleLevelComplete(1, data)} />
           )}
 
           {currentLevel === 2 && (
             <Level2StationDependencyMatrix 
-              sortedStations={sortedStations}
-              onComplete={(sequence) => handleLevelComplete(2, sequence)} 
+              onComplete={(data) => handleLevelComplete(2, data)} 
             />
           )}
 
           {currentLevel === 3 && (
             <Level3MissionReport 
-              activationSequence={activationSequence}
-              onComplete={() => {
-                handleLevelComplete(3);
+              onComplete={(data) => {
+                handleLevelComplete(3, data);
                 handleMissionComplete();
               }} 
             />

@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import NetworkDependencyGraph from './NetworkDependencyGraph';
+import useAppStore from '../store/appStore';
 
-const Level2StationDependencyMatrix = ({ sortedStations = [], onComplete }) => {
+const Level2StationDependencyMatrix = ({ onComplete }) => {
+  // Read sorted stations from global store
+  const sortedStations = useAppStore((state) => state.sortedStations);
+  
   // Station order for the matrix
   const stationOrder = ['AK', 'QA', 'FM', 'DP', 'RC', 'PE', 'BT', 'CU', 'LM', 'KN', 'SJ', 'VG', 'HX', 'ZF'];
   
@@ -469,7 +473,14 @@ const Level2StationDependencyMatrix = ({ sortedStations = [], onComplete }) => {
           // Simulate upload animation for 1.5 seconds
           await new Promise(resolve => setTimeout(resolve, 1500));
           setIsUploading(false);
-          onComplete(activationSequence);
+          if (onComplete) {
+            onComplete({
+              dependencyMatrix,
+              activationSequence,
+              cycleDetected,
+              cycleNodes: cycleStations
+            });
+          }
         }}
         disabled={!sequencerComplete || isUploading}
         className={`w-full px-6 py-3 font-orbitron font-bold text-sm transition-all active:scale-95 ${
