@@ -13,27 +13,27 @@ const Level3MissionReport = ({ onComplete }) => {
   const cycleDetected = useAppStore((state) => state.cycleDetected);
   const dependencyMatrix = useAppStore((state) => state.dependencyMatrix);
   
-  // Use activation sequence from Level 2 if available
-  const activationOrder = activationSequence.length > 0 ? activationSequence : ['AK', 'QA', 'FM', 'BT', 'DP', 'RC', 'LM', 'KN', 'PE', 'CU', 'HX', 'ZF', 'SJ', 'VG'];
+  // Use activation sequence from Level 2 if available, otherwise use exact matrix order
+  const activationOrder = activationSequence.length > 0 ? activationSequence : ['DP', 'AK', 'RC', 'QA', 'BT', 'FM', 'PE', 'CU', 'LM', 'KN', 'SJ', 'VG', 'HX', 'ZF'];
 
-  // Generate weighted connectivity matrix based on activation sequence order
-  const generateConnectivityMatrix = () => {
-    const size = activationOrder.length;
-    const matrix = Array(size).fill(null).map(() => Array(size).fill(0));
-    
-    // Create weighted connections based on dependency relationships
-    for (let i = 0; i < size; i++) {
-      for (let j = i + 1; j < size; j++) {
-        const weight = Math.max(1, 10 - Math.abs(j - i));
-        matrix[i][j] = weight;
-        matrix[j][i] = Math.floor(weight * 0.7);
-      }
-    }
-    
-    return matrix;
-  };
-
-  const connectivityMatrix = generateConnectivityMatrix();
+  // Hardcoded symmetric weight matrix
+  // Stations ordered: DP,AK,RC,QA,BT,FM,PE,CU,LM,KN,SJ,VG,HX,ZF
+  const connectivityMatrix = [
+    [0,  3,  9, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],  // DP
+    [3,  0,  4, 10, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],  // AK
+    [9,  4,  0,  2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],  // RC
+    [-1,10,  2,  0,  5, -1, -1, -1, -1, -1, -1, -1, -1, -1],  // QA
+    [-1,-1, -1,  5,  0,  6, 11, -1, -1, -1, -1, -1, -1, -1],  // BT
+    [-1,-1, -1, -1,  6,  0,  3, -1, -1, -1, -1, -1, -1, -1],  // FM
+    [-1,-1, -1, -1, 11,  3,  0,  4, -1, -1, -1, -1, -1, -1],  // PE
+    [-1,-1, -1, -1, -1, -1,  4,  0,  2, -1, -1, -1, -1, -1],  // CU
+    [-1,-1, -1, -1, -1, -1, -1,  2,  0,  5,  8, -1, -1, -1],  // LM
+    [-1,-1, -1, -1, -1, -1, -1, -1,  5,  0,  3, -1, -1, -1],  // KN
+    [-1,-1, -1, -1, -1, -1, -1, -1,  8,  3,  0,  4, -1, -1],  // SJ
+    [-1,-1, -1, -1, -1, -1, -1, -1, -1, -1,  4,  0,  2, -1],  // VG
+    [-1,-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  2,  0,  7],  // HX
+    [-1,-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  7,  0],  // ZF
+  ];
 
   // Initialize report data
   useEffect(() => {
@@ -93,26 +93,56 @@ const Level3MissionReport = ({ onComplete }) => {
                   </th>
                   {activationOrder.map((colStation, colIdx) => {
                     const weight = connectivityMatrix[rowIdx][colIdx];
-                    const bgColor =
-                      weight === 0
-                        ? 'bg-gray-900'
-                        : weight <= 3
-                        ? 'bg-blue-900'
-                        : weight <= 6
-                        ? 'bg-cyan-900'
-                        : 'bg-green-900';
+                    
+                    // Determine cell styling based on weight value
+                    let bgColor = 'bg-gray-900';
+                    let textColor = 'text-gray-600';
+                    let glowClass = '';
+                    let cellSymbol = '';
+                    let tooltipText = '';
+
+                    if (weight === 0) {
+                      // Diagonal cells (0)
+                      bgColor = 'bg-gray-900';
+                      textColor = 'text-gray-600';
+                      cellSymbol = '—';
+                      tooltipText = 'Diagonal';
+                    } else if (weight === -1) {
+                      // No connection cells (-1)
+                      bgColor = 'bg-gray-950';
+                      textColor = 'text-gray-700';
+                      cellSymbol = '∅';
+                      tooltipText = 'No connection';
+                    } else if (weight >= 1 && weight <= 3) {
+                      // Low cost (1-3): bright cyan glow
+                      bgColor = 'bg-cyan-900 bg-opacity-40';
+                      textColor = 'text-cyan-300 font-bold';
+                      glowClass = 'shadow-lg shadow-cyan-500 shadow-opacity-50';
+                      cellSymbol = weight.toString();
+                      tooltipText = `Repair cost: ${weight} energy units`;
+                    } else if (weight >= 4 && weight <= 6) {
+                      // Medium cost (4-6): yellow glow
+                      bgColor = 'bg-yellow-900 bg-opacity-40';
+                      textColor = 'text-yellow-300 font-bold';
+                      glowClass = 'shadow-lg shadow-yellow-500 shadow-opacity-50';
+                      cellSymbol = weight.toString();
+                      tooltipText = `Repair cost: ${weight} energy units`;
+                    } else if (weight >= 7 && weight <= 11) {
+                      // High cost (7-11): orange-red glow
+                      bgColor = 'bg-orange-900 bg-opacity-40';
+                      textColor = 'text-orange-300 font-bold';
+                      glowClass = 'shadow-lg shadow-orange-500 shadow-opacity-50';
+                      cellSymbol = weight.toString();
+                      tooltipText = `Repair cost: ${weight} energy units`;
+                    }
 
                     return (
                       <td
                         key={`${rowStation}-${colStation}`}
-                        className={`w-8 h-8 border border-gray-700 flex items-center justify-center cursor-pointer hover:border-cyber-cyan transition-colors ${bgColor}`}
-                        title={`${rowStation} → ${colStation}: ${weight}`}
+                        className={`w-8 h-8 border border-gray-700 flex items-center justify-center cursor-pointer hover:border-cyan-400 transition-all ${bgColor} ${glowClass}`}
+                        title={tooltipText}
                       >
-                        {weight > 0 && (
-                          <span className={`text-xs font-bold ${weight > 7 ? 'text-cyber-green' : 'text-cyber-cyan'}`}>
-                            {weight}
-                          </span>
-                        )}
+                        <span className={textColor}>{cellSymbol}</span>
                       </td>
                     );
                   })}
@@ -121,12 +151,30 @@ const Level3MissionReport = ({ onComplete }) => {
             </tbody>
           </table>
         </div>
-        <div className="mt-4 p-3 bg-gray-900 rounded text-sm font-tech-mono text-gray-400">
-          <div className="flex gap-4">
-            <div><span className="text-cyber-cyan">■ Dark:</span> No connection</div>
-            <div><span className="text-blue-400">■ Blue:</span> Weak (1-3)</div>
-            <div><span className="text-cyan-400">■ Cyan:</span> Medium (4-6)</div>
-            <div><span className="text-green-400">■ Green:</span> Strong (7-10)</div>
+        <div className="mt-6 space-y-3">
+          <div className="p-3 bg-gray-900 rounded text-sm font-tech-mono text-gray-400">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded border border-gray-600 bg-gray-950"></div>
+                <span>No Path (∅)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded border border-gray-600 bg-gray-900"></div>
+                <span>Diagonal (—)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded border border-cyan-400 bg-cyan-900 bg-opacity-40"></div>
+                <span>Low (1-3)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded border border-yellow-400 bg-yellow-900 bg-opacity-40"></div>
+                <span>Medium (4-6)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded border border-orange-400 bg-orange-900 bg-opacity-40"></div>
+                <span>High (7-11)</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -142,11 +190,11 @@ const Level3MissionReport = ({ onComplete }) => {
         </div>
 
         <div className="p-4 bg-cyber-card border-2 border-cyber-cyan rounded-lg">
-          <div className="text-sm font-tech-mono text-gray-400 mb-2">TOTAL LINK WEIGHT</div>
+          <div className="text-sm font-tech-mono text-gray-400 mb-2">TOTAL REPAIR COST</div>
           <div className="text-3xl font-orbitron font-bold text-cyber-cyan">
-            {connectivityMatrix.flat().reduce((a, b) => a + b, 0)}
+            {connectivityMatrix.flat().filter(v => v > 0).reduce((a, b) => a + b, 0)}
           </div>
-          <div className="text-xs text-gray-500 mt-2">Sum of all weighted connections</div>
+          <div className="text-xs text-gray-500 mt-2">Sum of all energy units</div>
         </div>
 
         <div className="p-4 bg-cyber-card border-2 border-cyber-orange rounded-lg">
