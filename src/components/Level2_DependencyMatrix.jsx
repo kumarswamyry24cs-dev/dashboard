@@ -44,6 +44,7 @@ const Level2StationDependencyMatrix = ({ sortedStations = [], onComplete }) => {
   const [cycleDetected, setCycleDetected] = useState(false);
   const [cycleStations, setCycleStations] = useState([]);
   const [sequencerComplete, setSequencerComplete] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   const handleCellHover = (rowIdx, colIdx, e) => {
     if (rowIdx === colIdx) return; // Skip diagonal
@@ -459,22 +460,58 @@ const Level2StationDependencyMatrix = ({ sortedStations = [], onComplete }) => {
 
       {/* Completion Button */}
       <button
-        onClick={() => {
+        onClick={async () => {
+          setIsUploading(true);
           // Store activation sequence in window for Level 3 access
           if (!cycleDetected) {
             window.__activationSequence = activationSequence;
           }
+          // Simulate upload animation for 1.5 seconds
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          setIsUploading(false);
           onComplete(activationSequence);
         }}
-        disabled={!sequencerComplete}
+        disabled={!sequencerComplete || isUploading}
         className={`w-full px-6 py-3 font-orbitron font-bold text-sm transition-all active:scale-95 ${
-          sequencerComplete
-            ? 'bg-cyber-green bg-opacity-30 border-2 border-cyber-green rounded text-cyber-green hover:bg-opacity-40 hover:shadow-glow-green'
+          sequencerComplete && !isUploading
+            ? 'bg-cyber-green bg-opacity-30 border-2 border-cyber-green rounded text-cyber-green hover:bg-opacity-40 hover:shadow-glow-green cursor-pointer'
             : 'bg-gray-700 border-2 border-gray-600 rounded text-gray-500 cursor-not-allowed opacity-50'
         }`}
       >
-        {sequencerComplete ? '✓ PROCEED TO LEVEL 3 →' : '⟳ Complete sequencer first'}
+        {isUploading 
+          ? '⬆️ UPLOADING ACTIVATION SEQUENCE TO LEVEL 3...' 
+          : '✓ PROCEED TO LEVEL 3 →'}
       </button>
+
+      {/* Upload Animation Overlay */}
+      {isUploading && (
+        <div className="fixed inset-0 bg-cyber-dark bg-opacity-95 flex items-center justify-center z-50">
+          <div className="p-6 bg-cyber-card border-2 border-cyber-cyan rounded-lg font-tech-mono text-center">
+            <div className="text-cyber-green mb-4 animate-pulse text-lg font-orbitron">
+              ⬆️ UPLOADING ACTIVATION SEQUENCE
+            </div>
+            <div className="text-cyber-cyan text-sm mb-4">
+              {activationSequence.join(' → ')}
+            </div>
+            <div className="space-y-2">
+              <div className="text-gray-400 text-xs">
+                ▌ Transferring topological order...
+              </div>
+              <div className="text-gray-400 text-xs">
+                ▌ Syncing Level 3 matrix...
+              </div>
+              <div className="text-gray-400 text-xs">
+                ▌ Initializing recovery protocol...
+              </div>
+            </div>
+            <div className="mt-4 flex gap-1 justify-center">
+              <div className="w-2 h-8 bg-cyber-green animate-pulse" />
+              <div className="w-2 h-8 bg-cyber-cyan animate-pulse" style={{ animationDelay: '100ms' }} />
+              <div className="w-2 h-8 bg-cyber-green animate-pulse" style={{ animationDelay: '200ms' }} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

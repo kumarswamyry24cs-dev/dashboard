@@ -18,6 +18,7 @@ const Wizard = () => {
   const [showGreenFlash, setShowGreenFlash] = useState(false);
   const [showWipeAnimation, setShowWipeAnimation] = useState(false);
   const [sortedStations, setSortedStations] = useState([]);
+  const [activationSequence, setActivationSequence] = useState([]);
   const { soundEnabled, playBeep, playSuccess, toggleSound } = useSoundEffects();
 
   const totalLevels = 3;
@@ -27,6 +28,10 @@ const Wizard = () => {
     // Store sorted stations from Level 1
     if (level === 1 && data) {
       setSortedStations(data);
+    }
+    // Store activation sequence from Level 2
+    if (level === 2 && data) {
+      setActivationSequence(data);
     }
     setLevelComplete(prev => ({
       ...prev,
@@ -130,15 +135,18 @@ const Wizard = () => {
           {currentLevel === 2 && (
             <Level2StationDependencyMatrix 
               sortedStations={sortedStations}
-              onComplete={() => handleLevelComplete(2)} 
+              onComplete={(sequence) => handleLevelComplete(2, sequence)} 
             />
           )}
 
           {currentLevel === 3 && (
-            <Level3MissionReport onComplete={() => {
-              handleLevelComplete(3);
-              handleMissionComplete();
-            }} />
+            <Level3MissionReport 
+              activationSequence={activationSequence}
+              onComplete={() => {
+                handleLevelComplete(3);
+                handleMissionComplete();
+              }} 
+            />
           )}
         </div>
       </main>

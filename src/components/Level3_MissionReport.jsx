@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import ParticleBackground from './ParticleBackground';
 
-const Level3MissionReport = ({ onComplete }) => {
+const Level3MissionReport = ({ activationSequence = [], onComplete }) => {
   const [reportData, setReportData] = useState(null);
   const [hasCycles, setHasCycles] = useState(false);
 
   // Sorted stations from Level 1
   const sortedStations = ['AK', 'QA', 'FM', 'BT', 'DP', 'RC', 'LM', 'KN', 'PE', 'CU', 'HX', 'ZF', 'SJ', 'VG'];
+  // Use activation sequence from Level 2 if available
+  const activationOrder = activationSequence.length > 0 ? activationSequence : sortedStations;
 
   // Mock data for the report
   useEffect(() => {
@@ -16,24 +18,24 @@ const Level3MissionReport = ({ onComplete }) => {
       missionEndTime: '2026-05-11T11:41:00Z',
       stationCount: 14,
       signalRange: { min: 14, max: 16 },
-      sortedStations: sortedStations,
+      sortedStations: activationOrder,
       inversions: 14,
       maxInversions: 91,
       disorderPercentage: 15,
       disorderLevel: 'LOW',
-      totalDependencies: 0,
+      totalDependencies: 24,
       cyclesDetected: 0,
       adjList: {}
     };
 
     // Build adjacency list
-    sortedStations.forEach(station => {
+    activationOrder.forEach(station => {
       data.adjList[station] = [];
     });
 
     setReportData(data);
     setHasCycles(data.cyclesDetected > 0);
-  }, []);
+  }, [activationOrder]);
 
   const exportAsJSON = () => {
     if (!reportData) return;
